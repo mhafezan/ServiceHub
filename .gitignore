@@ -1,4 +1,5 @@
 # Prevent credentials, generated output, private data, and local infrastructure state from entering Git.
+
 .env
 .env.*
 !.env.example
