@@ -14,13 +14,12 @@ TERMINAL = {"Completed", "Cancelled", "Expired", "Administrative_Closure"}
 TRACKABLE = {"Driver_En_Route", "Pickup_Confirmation_Pending", "Trip_Started"}
 ACTIONS = {"publish", "offer", "withdraw", "accept", "depart", "start", "pickup", "complete", "cancel", "reopen"}
 
-
 class RuleError(ValueError):
     """Report a recoverable business-rule rejection to the caller."""
 
-
 def enqueue(db: Session, kind: str, payload: dict, due: float, dedupe: str | None = None) -> Job:
     """Append work within the caller's transaction, deduplicating known business events."""
+
     key = dedupe or uid()
     existing = db.scalar(select(Job).where(Job.dedupe == key))
     if existing:
@@ -29,17 +28,17 @@ def enqueue(db: Session, kind: str, payload: dict, due: float, dedupe: str | Non
     db.add(job)
     return job
 
-
 def metres(a: tuple[float, float], b: tuple[float, float]) -> float:
     """Calculate great-circle distance using coordinates supplied by the caller."""
+
     lat1, lat2 = math.radians(a[0]), math.radians(b[0])
     dlat, dlon = lat2 - lat1, math.radians(b[1] - a[1])
     value = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
     return 6371000 * 2 * math.asin(min(1, math.sqrt(value)))
 
-
 def scheduled_timestamp(local_time: str | None, timezone: str, now: float) -> float | None:
     """Validate Ontario local pickup times, including DST folds and gaps."""
+
     if not local_time:
         return None
     if timezone not in {"America/Toronto", "America/Winnipeg", "America/Atikokan"}:
@@ -63,13 +62,12 @@ def scheduled_timestamp(local_time: str | None, timezone: str, now: float) -> fl
         raise RuleError("Scheduled pickup must be between 30 minutes and 30 days ahead")
     return result
 
-
 def public_address(address: dict) -> str:
     """Build a public label from trusted route/locality components only, never formatted addresses."""
+
     city = address.get("city", "Ontario")
     street = address.get("street", "")
     return f"{street}, {city}" if street else city
-
 
 class Rides:
     """Execute all ride operations in a caller-owned database transaction."""
