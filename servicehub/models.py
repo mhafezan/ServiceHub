@@ -8,11 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from servicehub.db import Base
 
-
 def uid() -> str:
     """Create an opaque identifier safe for callbacks and client references."""
     return uuid.uuid4().hex
-
 
 class User(Base):
     """Serialize each user's commitments and retain minimal Telegram identity."""
@@ -22,7 +20,6 @@ class User(Base):
     active_ride: Mapped[str | None] = mapped_column(String(32))
     mode: Mapped[str] = mapped_column(String(16), default="supervisor")
     context: Mapped[dict] = mapped_column(JSON, default=dict)
-
 
 class Ride(Base):
     """Persist a versioned ride and all server-authoritative booking deadlines."""
@@ -46,7 +43,6 @@ class Ride(Base):
     created_at: Mapped[float] = mapped_column(Float, default=time.time)
     channel_message: Mapped[int | None] = mapped_column(BigInteger)
 
-
 class Offer(Base):
     """Keep one revisioned quote per driver, ride, and reopening generation."""
     __tablename__ = "offers"
@@ -59,7 +55,6 @@ class Offer(Base):
     revision: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(16), default="pending")
 
-
 class Command(Base):
     """Bind a confirmed action to its authenticated actor and exact arguments."""
     __tablename__ = "commands"
@@ -70,7 +65,6 @@ class Command(Base):
     expires_at: Mapped[float] = mapped_column(Float)
     result: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[float] = mapped_column(Float, default=time.time)
-
 
 class Job(Base):
     """Serve as durable inbox, outbox, and scheduled work with expiring leases."""
@@ -87,7 +81,6 @@ class Job(Base):
     error: Mapped[str | None] = mapped_column(String(128))
     created_at: Mapped[float] = mapped_column(Float, default=time.time)
 
-
 class Event(Base):
     """Record privacy-minimal state transitions and operator interventions."""
     __tablename__ = "events"
@@ -97,7 +90,6 @@ class Event(Base):
     action: Mapped[str] = mapped_column(String(40))
     note: Mapped[str] = mapped_column(String(255), default="")
     created_at: Mapped[float] = mapped_column(Float, default=time.time, index=True)
-
 
 class Location(Base):
     """Retain consented first-party GPS fixes independently of address provider data."""
@@ -110,7 +102,6 @@ class Location(Base):
     accuracy: Mapped[float | None] = mapped_column(Float)
     sampled_at: Mapped[float] = mapped_column(Float, index=True)
     source: Mapped[str] = mapped_column(String(16))
-
 
 class TrainingSample(Base):
     """Store de-identified completed-ride features with rolling annual expiry."""
@@ -126,10 +117,8 @@ class TrainingSample(Base):
     quality_flags: Mapped[list] = mapped_column(JSON)
     eligible: Mapped[bool]
 
-
 class Template(Base):
     """Cache validated LLM-generated wording without user-specific values."""
     __tablename__ = "templates"
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     text: Mapped[str] = mapped_column(Text)
-
