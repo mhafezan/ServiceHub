@@ -13,9 +13,9 @@ from servicehub.messaging import generate_templates, render, welcome_buttons
 from servicehub.models import Event, Job, Ride, TrainingSample
 from servicehub.providers import telegram
 
-
 def main() -> None:
     """Execute explicit operator commands without printing credentials or private samples."""
+
     parser = argparse.ArgumentParser(prog="servicehub")
     parser.add_argument("command", choices=["worker", "generate-templates", "setup-telegram", "dead-jobs", "retry", "close-ride", "export-training"])
     parser.add_argument("--id")
@@ -23,10 +23,12 @@ def main() -> None:
     parser.add_argument("--reason", default="")
     parser.add_argument("--output", default="private-data/training.jsonl")
     args = parser.parse_args()
+
     if args.command == "worker":
         from servicehub.worker import run_local
         run_local()
         return
+    
     with Session.begin() as db:
         if args.command == "generate-templates":
             generate_templates(db)
@@ -65,4 +67,3 @@ def main() -> None:
             with target.open("w", encoding="utf-8") as stream:
                 for sample in db.scalars(select(TrainingSample).where(TrainingSample.eligible.is_(True), TrainingSample.completed_at > time.time() - 365 * 86400)):
                     stream.write(json.dumps({"distance_metres": sample.distance_metres, "price_cents": sample.agreed_price_cents, "currency": "CAD", "city": sample.pickup_city, "completed_at": sample.completed_at}) + "\n")
-

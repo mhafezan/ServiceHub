@@ -16,9 +16,9 @@ from servicehub.views import ride_view
 
 log = logging.getLogger("servicehub.jobs")
 
-
 def run_job(job_id: str) -> None:
     """Claim one job, perform its effect, and acknowledge only the matching lease."""
+
     now = time.time()
     with Session.begin() as db:
         job = db.scalar(select(Job).where(Job.id == job_id).with_for_update())
@@ -48,9 +48,9 @@ def run_job(job_id: str) -> None:
             job.status, job.error = "done", None
         job.lease_until, job.lease_token = 0, None
 
-
 def execute(kind: str, payload: dict, job_id: str) -> None:
     """Dispatch typed jobs while keeping external delivery out of domain transactions."""
+
     if kind == "telegram_update":
         from servicehub.telegram_app import handle_update
         handle_update(payload)
@@ -115,9 +115,9 @@ def execute(kind: str, payload: dict, job_id: str) -> None:
             if kind == "ride_event":
                 enqueue(db, "channel", {"ride_id": ride.id}, time.time(), f"channel:{job_id}")
 
-
 def update_channel(ride_id: str) -> None:
     """Serialize channel edits on the ride and always render the latest public state."""
+
     with Session.begin() as db:
         ride = db.scalar(select(Ride).where(Ride.id == ride_id).with_for_update())
         if not ride or ride.state == "Draft":
@@ -136,9 +136,9 @@ def update_channel(ride_id: str) -> None:
             result = telegram("sendMessage", body)
             ride.channel_message = result["message_id"]
 
-
 def dispatch() -> None:
     """Enqueue due database jobs into Cloud Tasks; leases tolerate duplicate task delivery."""
+
     from google.cloud import tasks_v2
 
     config = settings()
@@ -153,9 +153,9 @@ def dispatch() -> None:
                     "headers": {"Content-Type": "application/json"}, "body": b"{}"}}
             queue.create_task(parent=parent, task=task)
 
-
 def run_local() -> None:
     """Poll the same durable queue locally without requiring Redis or GCP."""
+
     while True:
         with Session.begin() as db:
             enqueue(db, "cleanup", {}, time.time(), f"cleanup:{int(time.time() // 86400)}")
@@ -163,4 +163,3 @@ def run_local() -> None:
         for job_id in ids:
             run_job(job_id)
         time.sleep(1)
-

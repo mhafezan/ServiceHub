@@ -2,7 +2,6 @@
 
 import re
 from string import Formatter
-
 from sqlalchemy import select
 
 from servicehub.agents import client
@@ -35,9 +34,9 @@ TEMPLATES = {
     "unavailable": "No current shared location is available. Ask the other participant to share their location.",
 }
 
-
 def placeholders(text: str) -> set[str]:
     """Extract simple placeholders and reject format expressions or attribute access."""
+
     fields = set()
     for _, field, spec, conversion in Formatter().parse(text):
         if field is not None:
@@ -46,9 +45,9 @@ def placeholders(text: str) -> set[str]:
             fields.add(field)
     return fields
 
-
 def render(db, key: str, values: dict | None = None) -> str:
     """Use generated cached wording, with explicit local bootstrap fixtures only."""
+
     template = db.get(Template, key)
     if template:
         text = template.text
@@ -58,9 +57,9 @@ def render(db, key: str, values: dict | None = None) -> str:
         raise RuntimeError("Message templates must be generated before deployment")
     return text.format(**(values or {}))[:4000]
 
-
 def generate_templates(db) -> None:
     """Generate and validate every message template before enabling live workflows."""
+
     import json
 
     for key, baseline in TEMPLATES.items():
@@ -77,20 +76,20 @@ def generate_templates(db) -> None:
         else:
             db.add(Template(key=key, text=text))
 
-
 def form_button(label: str = "My Ride", ride_id: str = "") -> dict:
     """Open the authenticated Mini App without embedding private data in URLs."""
-    return {"text": label, "web_app": {"url": f"{settings().public_url}/?ride={ride_id}"}}
 
+    return {"text": label, "web_app": {"url": f"{settings().public_url}/?ride={ride_id}"}}
 
 def welcome_buttons() -> dict:
     """Keep the requested two-row pinned entry layout stable."""
+
     root = f"https://t.me/{settings().telegram_bot_username}?start="
     return {"inline_keyboard": [[{"text": "Need a Ride", "url": root + "ride"}], [{"text": "Ask Lili", "url": root + "lili"}]]}
 
-
 def ride_buttons(service: Rides, actor: int, ride: Ride) -> dict:
     """Create owned, version-bound confirmation proposals and tracking controls."""
+
     from servicehub.views import command_summary
 
     buttons = [[form_button(ride_id=ride.id)]]
@@ -122,9 +121,9 @@ def ride_buttons(service: Rides, actor: int, ride: Ride) -> dict:
                     [{"text": "View Driver Location" if actor == ride.rider_id else "View Rider Location", "callback_data": f"location:{ride.id}"}]]
     return {"inline_keyboard": buttons}
 
-
 def event_messages(service: Rides, ride: Ride, action: str) -> list[dict]:
     """Project current ride events into private messages after transaction commit."""
+    
     db = service.db
     rider = db.get(User, ride.rider_id)
     recipients: list[tuple[int, str, dict]] = []

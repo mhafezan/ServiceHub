@@ -1,4 +1,5 @@
 // Render ServiceHub's mobile ride form, confirmed actions, and consent-based tracking.
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
@@ -27,6 +28,7 @@ function AddressPicker({label, onSelect}: {label: string; onSelect: (selection: 
   const [error, setError] = useState('');
   const session = useRef(crypto.randomUUID());
   useEffect(() => {
+    
     // Debounce provider requests and ignore results from superseded queries.
     let active = true;
     if (query.length < 3 || selected) {setRows([]); return;}
@@ -36,6 +38,7 @@ function AddressPicker({label, onSelect}: {label: string; onSelect: (selection: 
     }, 350);
     return () => {active = false; clearTimeout(timeout);};
   }, [query, selected]);
+  
   // Resolve a provider choice into a server-signed Ontario selection.
   async function choose(id: string) {
     try {const result = await api<Selection>(`/api/places/${id}`); setQuery(result.label); setSelected(true); setRows([]); onSelect(result); setError('');}
@@ -64,6 +67,7 @@ function App() {
   const [clock, setClock] = useState(Date.now());
   const rideId = useRef(new URLSearchParams(location.search).get('ride'));
   const form = useRef<HTMLFormElement>(null);
+  
   // Refresh only the selected or owned ride, preserving server authorization boundaries.
   const refresh = useCallback(async () => {
     const result = await api<Ride | null>(rideId.current ? `/api/rides/${rideId.current}` : '/api/rides/current');
@@ -71,6 +75,7 @@ function App() {
     if (result) {setTab('ride'); rideId.current = result.id;}
   }, []);
   useEffect(() => {
+    
     // Authenticate from Telegram; a browser preview cannot impersonate a user.
     const telegram = window.Telegram?.WebApp;
     telegram?.ready(); telegram?.expand();
@@ -80,6 +85,7 @@ function App() {
       .catch(err => setError(err.message));
   }, [refresh]);
   useEffect(() => {
+    
     // Keep the visible status and countdown current while the app remains open.
     if (!ready) return;
     const timer = setInterval(() => {setClock(Date.now()); void refresh().catch(() => {});}, 5000);
@@ -87,13 +93,16 @@ function App() {
   }, [ready, refresh]);
   const trackable = !!ride && ['Driver_En_Route', 'Pickup_Confirmation_Pending', 'Trip_Started'].includes(ride.state) && ride.role !== 'observer';
   useEffect(() => {
+    
     // Stop location collection immediately when the assignment's tracking window closes.
     if (!trackable) {setSharing(false); setFix(null); setOwnFix(null);}
   }, [trackable]);
   useEffect(() => {
+    
     // Send GPS fixes only after explicit consent and only while this view is foregrounded.
     if (!sharing || !ride || !trackable) return;
     let stopped = false;
+    
     // Persist one acquired device sample without retaining a browser location history.
     async function publish(latitude: number, longitude: number, accuracy: number | null) {
       if (stopped) return;
@@ -101,6 +110,7 @@ function App() {
       try {await api(`/api/rides/${ride!.id}/location`, 'POST', current); setOwnFix(current);}
       catch (err) {setError((err as Error).message);}
     }
+    
     // Prefer Telegram's permission-aware location bridge and fall back to browser geolocation.
     function sample() {
       if (document.visibilityState !== 'visible') return;
@@ -114,6 +124,7 @@ function App() {
     sample(); const timer = setInterval(sample, 10000);
     return () => {stopped = true; clearInterval(timer);};
   }, [sharing, ride?.id, trackable]);
+  
   // Prepare the server's immutable summary for an explicit second confirmation.
   async function propose(action: string, args: Record<string, unknown>) {
     setBusy(true); setError('');
@@ -121,6 +132,7 @@ function App() {
     catch (err) {setError((err as Error).message);}
     finally {setBusy(false);}
   }
+  
   // Save the single-form draft before presenting the publish confirmation.
   async function submit(event: React.FormEvent) {
     event.preventDefault(); if (!form.current || !pickup || !destination) return;
@@ -131,12 +143,14 @@ function App() {
       rideId.current = draft.id; await propose('publish', {ride_id: draft.id});
     } catch (err) {setError((err as Error).message);} finally {setBusy(false);}
   }
+  
   // Execute a user-confirmed command once and restore current server state.
   async function confirm() {
     if (!proposal) return; setBusy(true);
     try {await api(`/api/commands/${proposal.id}/confirm`, 'POST'); setProposal(null); await refresh();}
     catch (err) {setError((err as Error).message);} finally {setBusy(false);}
   }
+  
   // Refresh the counterpart's location without silently starting the caller's own tracking.
   async function viewLocation() {
     try {const result = await api<Fix | null>(`/api/rides/${ride?.id}/location`); setFix(result); if (!result) setError('No shared location is available yet.');}

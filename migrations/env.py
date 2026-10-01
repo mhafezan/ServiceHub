@@ -1,7 +1,6 @@
 """Run ServiceHub migrations using the configured database and complete model metadata."""
 
 from alembic import context
-
 from servicehub import models
 from servicehub.db import Base, engine
 

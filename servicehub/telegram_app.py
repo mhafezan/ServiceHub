@@ -14,9 +14,9 @@ from servicehub.models import Command, Ride, User
 from servicehub.providers import ProviderError, require_member, telegram
 from servicehub.views import command_summary, visible_ride
 
-
 def send_later(db, chat_id: int, text: str, buttons: dict | None = None, dedupe: str | None = None) -> None:
     """Persist a private response rather than sending inside a business transaction."""
+
     payload = {"chat_id": chat_id, "text": text}
     if buttons:
         payload["reply_markup"] = buttons
@@ -25,6 +25,7 @@ def send_later(db, chat_id: int, text: str, buttons: dict | None = None, dedupe:
 
 def handle_update(update: dict) -> None:
     """Process private messages, signed callbacks, and native live-location edits."""
+
     callback = update.get("callback_query")
     message = update.get("message") or update.get("edited_message") or (callback or {}).get("message", {})
     if message.get("chat", {}).get("type") != "private":
@@ -65,9 +66,9 @@ def handle_update(update: dict) -> None:
         with Session.begin() as db:
             send_later(db, actor, render(db, "error", {"reason": str(exc)}), {"inline_keyboard": [[form_button()]]}, f"error:{update['update_id']}")
 
-
 def handle_callback(actor: int, data: str) -> None:
     """Require owned confirmation records and authorize every location-view callback."""
+
     from servicehub.api import confirm_command
 
     if data.startswith("confirm:"):
@@ -100,9 +101,9 @@ def handle_callback(actor: int, data: str) -> None:
             else:
                 send_later(db, actor, render(db, "unavailable"))
 
-
 def handle_text(actor: int, text: str, update_id: int) -> None:
     """Handle entry links, price proposals, and bounded supervisor conversations."""
+    
     explicit = None
     if text.startswith("/start offer_"):
         require_member(actor)
