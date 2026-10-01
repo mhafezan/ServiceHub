@@ -1,11 +1,13 @@
 """Integrate Telegram and Google Places through bounded server-side requests."""
 
 import time
+
 import httpx
 
-from servicehub.config import settings
-from servicehub.domain import RuleError
-from servicehub.security import sign_payload, verify_payload
+from servicehub.core.config import settings
+from servicehub.rides.domain import RuleError
+from servicehub.security.tokens import sign_payload, verify_payload
+
 
 class ProviderError(RuntimeError):
     """Expose retry metadata without leaking request URLs or credentials."""

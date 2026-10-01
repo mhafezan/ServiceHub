@@ -87,27 +87,25 @@ The language model interprets requests and proposes actions. It does not control
 
 ```text
 .
+├── backend/
+│   ├── migrations/            # Alembic migration environment and schema versions
+│   ├── servicehub/
+│   │   ├── agents/            # Supervisor, ride assistant, and Lili orchestration
+│   │   ├── api/               # Public, Telegram webhook, and internal HTTP routes
+│   │   ├── core/              # Environment configuration and repository paths
+│   │   ├── database/          # SQLAlchemy sessions and table definitions
+│   │   ├── integrations/      # Telegram and external provider adapters
+│   │   ├── operations/        # Setup, recovery, worker, and export commands
+│   │   ├── rides/             # Ride state machine and role-filtered views
+│   │   ├── security/          # Telegram verification and signed sessions
+│   │   └── workers/           # Durable jobs and Cloud Tasks dispatch
+│   ├── alembic.ini            # Migration configuration
+│   └── pyproject.toml          # Python package and development tooling
 ├── frontend/                  # React Telegram Mini App
 │   ├── public/                # Privacy and service terms
 │   └── src/                   # Ride form, status, offers, and tracking UI
-├── migrations/                # Alembic migration environment and schema versions
-├── servicehub/
-│   ├── agents.py              # Supervisor, ride assistant, and Lili orchestration
-│   ├── api.py                 # Public, Telegram webhook, and internal HTTP routes
-│   ├── cli.py                 # Worker, setup, recovery, and export commands
-│   ├── config.py              # Environment-backed settings
-│   ├── db.py                  # SQLAlchemy engine and sessions
-│   ├── domain.py              # Ride state machine and transactional business rules
-│   ├── messaging.py           # Validated messages and Telegram controls
-│   ├── models.py              # SQLAlchemy table definitions
-│   ├── providers.py           # Telegram and Google Places clients
-│   ├── security.py            # Telegram verification and signed sessions
-│   ├── telegram_app.py        # Private-message and callback handling
-│   ├── views.py               # Role-filtered projections
-│   └── worker.py              # Durable job execution and Cloud Tasks dispatch
-├── .env.example              # Non-secret configuration template
-├── alembic.ini               # Migration configuration
-└── pyproject.toml             # Python package and development tooling
+├── .env.example               # Non-secret configuration template
+└── README.md
 ```
 
 ## Local development
@@ -157,13 +155,15 @@ Install the package and development tools:
 
 ```bash
 python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+python -m pip install -e "./backend[dev]"
 ```
 
 ### 3. Create the schema
 
 ```bash
+cd backend
 alembic upgrade head
+cd ..
 ```
 
 ### 4. Install and build the Mini App
@@ -182,7 +182,7 @@ The backend serves `frontend/dist` when that directory exists. For frontend-only
 Run the API:
 
 ```bash
-uvicorn servicehub.api:app --reload --host 0.0.0.0 --port 8000
+uvicorn servicehub.api.app:app --app-dir backend --reload --host 0.0.0.0 --port 8000
 ```
 
 Run the local worker in another terminal:
@@ -282,7 +282,7 @@ Production readiness should include MySQL concurrency tests, Telegram end-to-end
 - Add Docker-based local development and reproducible MySQL integration testing.
 - Add GitHub Actions CI/CD and infrastructure-as-code for the intended GCP deployment.
 - Add the ride quick guide consumed by Lili and the public guide endpoint.
-- Organize the backend into domain-focused packages as additional services are introduced.
+- Continue splitting provider adapters as additional external services are introduced.
 - Add a rental service through the supervisor's service registry.
 - Train and evaluate city-aware price guidance only after enough eligible first-party samples exist.
 

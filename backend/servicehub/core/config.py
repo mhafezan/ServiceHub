@@ -4,11 +4,13 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from servicehub.core.paths import REPOSITORY_ROOT
+
 
 class Settings(BaseSettings):
     """Keep external integrations optional locally and fail closed in deployed environments."""
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=REPOSITORY_ROOT / ".env", extra="ignore")
     environment: str = "local"
     database_url: str = "sqlite:///servicehub.db"
     telegram_bot_token: str = ""
@@ -51,4 +53,3 @@ def settings() -> Settings:
     result = Settings()
     result.validate_deployment()
     return result
-

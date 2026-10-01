@@ -7,6 +7,7 @@ import time
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from urllib.parse import parse_qsl
 
+
 def telegram_identity(init_data: str, bot_token: str, now: float | None = None) -> dict:
     """Validate Telegram's signed initialization data and reject expired or duplicate fields."""
 
@@ -46,4 +47,3 @@ def verify_payload(token: str, secret: str) -> dict:
     if data.get("exp", 0) < time.time():
         raise ValueError("Expired session")
     return data
-

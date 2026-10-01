@@ -1,18 +1,17 @@
 """Process durable inbox/outbox jobs with leases, retries, scheduled recovery, and GCP dispatch."""
 
-import json
 import logging
 import time
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 
-from servicehub.config import settings
-from servicehub.db import Session
-from servicehub.domain import Rides, enqueue
-from servicehub.messaging import event_messages, render
-from servicehub.models import Job, Offer, Ride, User, uid
-from servicehub.providers import ProviderError, telegram
-from servicehub.views import ride_view
+from servicehub.core.config import settings
+from servicehub.database.session import Session
+from servicehub.database.tables import Job, Offer, Ride, User, uid
+from servicehub.integrations.providers import ProviderError, telegram
+from servicehub.integrations.telegram.messaging import event_messages, render
+from servicehub.rides.domain import Rides, enqueue
+from servicehub.rides.views import ride_view
 
 log = logging.getLogger("servicehub.jobs")
 
@@ -52,7 +51,7 @@ def execute(kind: str, payload: dict, job_id: str) -> None:
     """Dispatch typed jobs while keeping external delivery out of domain transactions."""
 
     if kind == "telegram_update":
-        from servicehub.telegram_app import handle_update
+        from servicehub.integrations.telegram.handlers import handle_update
         handle_update(payload)
         return
     if kind in {"send", "send_location"}:
@@ -85,7 +84,7 @@ def execute(kind: str, payload: dict, job_id: str) -> None:
             ride = db.get(Ride, offer.ride_id)
             driver = db.get(User, offer.driver_id)
             if offer.status == "pending" and ride.state in {"Open", "Selecting"}:
-                from servicehub.messaging import form_button
+                from servicehub.integrations.telegram.messaging import form_button
                 enqueue(db, "send", {"chat_id": ride.rider_id,
                     "text": render(db, "offer", {"driver": driver.name, "price": f"{offer.price_cents / 100:.2f}", "reference": ride.id[:8]}),
                     "reply_markup": {"inline_keyboard": [[form_button("Review Offers", ride.id)]]}}, time.time(), f"delivery:{job_id}")

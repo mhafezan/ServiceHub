@@ -6,7 +6,8 @@ import uuid
 from sqlalchemy import JSON, BigInteger, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from servicehub.db import Base
+from servicehub.database.session import Base
+
 
 def uid() -> str:
     """Create an opaque identifier safe for callbacks and client references."""

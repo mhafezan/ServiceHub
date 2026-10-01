@@ -2,12 +2,11 @@
 
 import re
 from string import Formatter
-from sqlalchemy import select
 
-from servicehub.agents import client
-from servicehub.config import settings
-from servicehub.domain import TRACKABLE, Rides, public_address
-from servicehub.models import Command, Ride, Template, User
+from servicehub.agents.runtime import client
+from servicehub.core.config import settings
+from servicehub.database.tables import Ride, Template, User
+from servicehub.rides.domain import TRACKABLE, Rides
 
 TEMPLATES = {
     "welcome": "Welcome to ServiceHub. Need a ride in Ontario, or have a question?",
@@ -90,7 +89,7 @@ def welcome_buttons() -> dict:
 def ride_buttons(service: Rides, actor: int, ride: Ride) -> dict:
     """Create owned, version-bound confirmation proposals and tracking controls."""
 
-    from servicehub.views import command_summary
+    from servicehub.rides.views import command_summary
 
     buttons = [[form_button(ride_id=ride.id)]]
     actions: list[tuple[str, str, dict]] = []
@@ -141,4 +140,3 @@ def event_messages(service: Rides, ride: Ride, action: str) -> list[dict]:
         if ride.driver_id and action not in {"pickup_requested", "departed"}:
             recipients.append((ride.driver_id, key, values))
     return [{"chat_id": actor, "text": render(db, key, values), "reply_markup": ride_buttons(service, actor, ride)} for actor, key, values in recipients]
-

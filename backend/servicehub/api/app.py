@@ -2,23 +2,29 @@
 
 import hmac
 import time
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from servicehub.config import settings
-from servicehub.db import Session
-from servicehub.domain import Rides, RuleError, enqueue, scheduled_timestamp
-from servicehub.models import Command, Job, Ride, User
-from servicehub.providers import ProviderError, address_from_token, autocomplete, require_member, resolve_place
-from servicehub.security import sign_payload, telegram_identity, verify_payload
-from servicehub.views import command_summary, visible_ride
+from servicehub.core.config import settings
+from servicehub.core.paths import DOCUMENTATION_DIR, FRONTEND_DIST
+from servicehub.database.session import Session
+from servicehub.database.tables import Command, Ride, User
+from servicehub.integrations.providers import (
+    ProviderError,
+    address_from_token,
+    autocomplete,
+    require_member,
+    resolve_place,
+)
+from servicehub.rides.domain import Rides, RuleError, enqueue, scheduled_timestamp
+from servicehub.rides.views import command_summary, visible_ride
+from servicehub.security.tokens import sign_payload, telegram_identity, verify_payload
 
 app = FastAPI(title="ServiceHub", docs_url="/api/docs" if settings().environment == "local" else None)
 
@@ -191,7 +197,7 @@ def publish_location(ride_id: str, body: LocationInput, user_id: Actor):
 def view_location(ride_id: str, user_id: Actor):
     """Return only the other participant's last fix while sharing is active."""
 
-    from servicehub.domain import TRACKABLE
+    from servicehub.rides.domain import TRACKABLE
 
     with Session() as db:
         service = Rides(db)
@@ -209,7 +215,7 @@ def kick() -> None:
 
     if settings().task_mode == "gcp":
         try:
-            from servicehub.worker import dispatch
+            from servicehub.workers.jobs import dispatch
             dispatch()
         except Exception:
             pass
@@ -252,7 +258,7 @@ def internal_identity(authorization: Annotated[str, Header()] = "") -> None:
 def sweep():
     """Repair pending dispatch and enqueue retention work on a trusted schedule."""
 
-    from servicehub.worker import dispatch
+    from servicehub.workers.jobs import dispatch
 
     with Session.begin() as db:
         enqueue(db, "cleanup", {}, time.time(), f"cleanup:{int(time.time() // 86400)}")
@@ -263,7 +269,7 @@ def sweep():
 def work(job_id: str):
     """Process a durable job through a leased worker."""
 
-    from servicehub.worker import run_job
+    from servicehub.workers.jobs import run_job
 
     run_job(job_id)
     return {"ok": True}
@@ -272,8 +278,8 @@ def work(job_id: str):
 def public_guide():
     """Publish the same ride guide used by the read-only information agent."""
 
-    return FileResponse(Path(__file__).resolve().parents[1] / "Documentation" / "Ride-Service-Quick-Guide.md", media_type="text/plain")
+    return FileResponse(DOCUMENTATION_DIR / "Ride-Service-Quick-Guide.md", media_type="text/plain")
 
-static = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+static = FRONTEND_DIST
 if static.exists():
     app.mount("/", StaticFiles(directory=static, html=True), name="miniapp")

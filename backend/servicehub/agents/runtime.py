@@ -2,17 +2,17 @@
 
 import json
 import time
-from pathlib import Path
 
 from openai import OpenAI
 
-from servicehub.config import settings
-from servicehub.domain import Rides, RuleError
-from servicehub.models import Ride, User
-from servicehub.views import command_summary, ride_view
+from servicehub.core.config import settings
+from servicehub.core.paths import DOCUMENTATION_DIR
+from servicehub.database.tables import Ride, User
+from servicehub.rides.domain import Rides, RuleError
+from servicehub.rides.views import command_summary, ride_view
 
 SERVICES = {"ride": {"name": "Ontario rides", "guide": "Ride-Service-Quick-Guide.md"}}
-DOCS = Path(__file__).resolve().parents[1] / "Documentation"
+DOCS = DOCUMENTATION_DIR
 
 def client() -> OpenAI:
     """Construct a bounded client with automatic retries disabled for predictable latency."""
@@ -118,4 +118,3 @@ def answer(service: Rides, actor: int, text: str, explicit: str | None = None) -
             conversation.append({"type": "function_call_output", "call_id": call.call_id, "output": json.dumps(result)})
             
     return {"text": "Please use the ride form or My Ride to continue.", "open_form": True, "commands": proposals}
-

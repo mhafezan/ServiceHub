@@ -2,10 +2,12 @@
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
 from sqlalchemy import select
 
-from servicehub.domain import Rides, RuleError, public_address
-from servicehub.models import Offer, Ride, User
+from servicehub.database.tables import Offer, Ride, User
+from servicehub.rides.domain import Rides, RuleError, public_address
+
 
 def ride_view(service: Rides, actor: int, ride: Ride) -> dict:
     """Expose exact routes only to the owner and currently selected driver."""

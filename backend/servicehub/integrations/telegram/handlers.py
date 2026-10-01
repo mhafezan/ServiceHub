@@ -3,16 +3,15 @@
 import time
 from decimal import Decimal, InvalidOperation
 
-from sqlalchemy import select
+from servicehub.agents.runtime import answer
+from servicehub.core.config import settings
+from servicehub.database.session import Session
+from servicehub.database.tables import Command, Ride, User
+from servicehub.integrations.providers import ProviderError, require_member, telegram
+from servicehub.integrations.telegram.messaging import form_button, render, ride_buttons
+from servicehub.rides.domain import TRACKABLE, Rides, RuleError, enqueue
+from servicehub.rides.views import command_summary, visible_ride
 
-from servicehub.agents import answer
-from servicehub.config import settings
-from servicehub.db import Session
-from servicehub.domain import TRACKABLE, Rides, RuleError, enqueue
-from servicehub.messaging import form_button, render, ride_buttons
-from servicehub.models import Command, Ride, User
-from servicehub.providers import ProviderError, require_member, telegram
-from servicehub.views import command_summary, visible_ride
 
 def send_later(db, chat_id: int, text: str, buttons: dict | None = None, dedupe: str | None = None) -> None:
     """Persist a private response rather than sending inside a business transaction."""
@@ -69,7 +68,7 @@ def handle_update(update: dict) -> None:
 def handle_callback(actor: int, data: str) -> None:
     """Require owned confirmation records and authorize every location-view callback."""
 
-    from servicehub.api import confirm_command
+    from servicehub.api.app import confirm_command
 
     if data.startswith("confirm:"):
         confirm_command(actor, data.split(":", 1)[1])
@@ -150,4 +149,3 @@ def handle_text(actor: int, text: str, update_id: int) -> None:
         for command in response.get("commands", []):
             rows.append([{"text": "Review Action", "callback_data": f"review:{command['id']}"}])
         send_later(db, actor, response["text"], {"inline_keyboard": rows} if rows else None, f"answer:{update_id}")
-

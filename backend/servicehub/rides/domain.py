@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from servicehub.models import Command, Event, Job, Location, Offer, Ride, TrainingSample, User, uid
+from servicehub.database.tables import Command, Event, Job, Location, Offer, Ride, TrainingSample, User, uid
 
 TERMINAL = {"Completed", "Cancelled", "Expired", "Administrative_Closure"}
 TRACKABLE = {"Driver_En_Route", "Pickup_Confirmation_Pending", "Trip_Started"}
@@ -393,4 +393,3 @@ class Rides:
         self.db.execute(delete(Command).where(Command.created_at < self.now - 30 * 86400))
         self.db.execute(delete(Job).where(Job.status.in_(["done", "dead"]), Job.created_at < self.now - 30 * 86400))
         self.db.execute(delete(Event).where(Event.created_at < self.now - 90 * 86400))
-

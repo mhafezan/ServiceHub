@@ -3,7 +3,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from servicehub.config import settings
+from servicehub.core.config import settings
+
 
 class Base(DeclarativeBase):
     """Collect the ServiceHub relational schema for migrations."""
@@ -18,4 +19,3 @@ def make_engine(url: str):
 
 engine = make_engine(settings().database_url)
 Session = sessionmaker(engine, expire_on_commit=False)
-

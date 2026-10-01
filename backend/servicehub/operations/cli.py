@@ -6,12 +6,13 @@ import time
 
 from sqlalchemy import select
 
-from servicehub.config import settings
-from servicehub.db import Session
-from servicehub.domain import Rides
-from servicehub.messaging import generate_templates, render, welcome_buttons
-from servicehub.models import Event, Job, Ride, TrainingSample
-from servicehub.providers import telegram
+from servicehub.core.config import settings
+from servicehub.database.session import Session
+from servicehub.database.tables import Event, Job, Ride, TrainingSample
+from servicehub.integrations.providers import telegram
+from servicehub.integrations.telegram.messaging import generate_templates, render, welcome_buttons
+from servicehub.rides.domain import Rides
+
 
 def main() -> None:
     """Execute explicit operator commands without printing credentials or private samples."""
@@ -25,7 +26,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "worker":
-        from servicehub.worker import run_local
+        from servicehub.workers.jobs import run_local
         run_local()
         return
     
