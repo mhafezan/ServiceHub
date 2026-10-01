@@ -2,15 +2,14 @@
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
 from sqlalchemy import select
 
 from servicehub.domain import Rides, RuleError, public_address
 from servicehub.models import Offer, Ride, User
 
-
 def ride_view(service: Rides, actor: int, ride: Ride) -> dict:
     """Expose exact routes only to the owner and currently selected driver."""
+
     privileged = actor in {ride.rider_id, ride.driver_id}
     details = ride.details
     result = {
@@ -36,17 +35,17 @@ def ride_view(service: Rides, actor: int, ride: Ride) -> dict:
     ]
     return result
 
-
 def visible_ride(service: Rides, actor: int, ride_id: str) -> dict:
     """Permit public-route inspection for bidding while enforcing private closed-ride access."""
+
     ride = service.db.get(Ride, ride_id)
     if not ride or (actor not in {ride.rider_id, ride.driver_id} and ride.state != "Open"):
         raise RuleError("Ride unavailable")
     return ride_view(service, actor, ride)
 
-
 def command_summary(service: Rides, actor: int, action: str, args: dict) -> str:
     """Build immutable confirmation facts from owned resources, never model-provided descriptions."""
+
     ride = service.db.get(Ride, args.get("ride_id", ""))
     if not ride:
         raise RuleError("Ride not found")
@@ -78,4 +77,3 @@ def command_summary(service: Rides, actor: int, action: str, args: dict) -> str:
         args["attempt"] = ride.pickup_attempt
         text += " · Confirm pickup occurred" if args.get("accepted") is True else " · Reject pickup"
     return text
-
