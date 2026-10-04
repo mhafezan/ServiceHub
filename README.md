@@ -179,6 +179,13 @@ The backend serves `frontend/dist` when that directory exists. For frontend-only
 
 ### 5. Start the application and worker
 
+Virtual-environment activation applies to one terminal at a time. Activate `.venv` separately in
+each terminal opened for the API, worker, or operational commands. On Windows PowerShell, run:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
 Run the API:
 
 ```bash
@@ -189,6 +196,12 @@ Run the local worker in another terminal:
 
 ```bash
 servicehub worker
+```
+
+On Windows, the worker can also be started without activation by invoking its executable directly:
+
+```powershell
+.\.venv\Scripts\servicehub.exe worker
 ```
 
 Health endpoints:
