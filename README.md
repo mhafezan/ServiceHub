@@ -220,6 +220,18 @@ servicehub generate-templates
 
 Set `PUBLIC_URL` to the public HTTPS origin, configure the Telegram values, add the bot as a channel administrator, and then register the webhook and pinned entry message:
 
+Telegram cannot send webhooks to `localhost`. For local development, keep the API running and expose
+port 8000 through a public HTTPS tunnel. For example, after installing `cloudflared`, run this in a
+separate terminal:
+
+```powershell
+cloudflared tunnel --url http://localhost:8000
+```
+
+Copy the generated `https://...trycloudflare.com` origin into `PUBLIC_URL` in `.env`, restart the API,
+and keep the tunnel running. Quick Tunnel addresses change whenever the tunnel is restarted, so update
+`PUBLIC_URL` and rerun `setup-telegram` after each change.
+
 ```bash
 servicehub setup-telegram
 ```

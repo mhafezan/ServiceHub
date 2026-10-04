@@ -3,13 +3,14 @@
 import argparse
 import json
 import time
+from urllib.parse import urlparse
 
 from sqlalchemy import select
 
 from servicehub.core.config import settings
 from servicehub.database.session import Session
 from servicehub.database.tables import Event, Job, Ride, TrainingSample
-from servicehub.integrations.providers import telegram
+from servicehub.integrations.providers import ProviderError, telegram
 from servicehub.integrations.telegram.messaging import generate_templates, render, welcome_buttons
 from servicehub.rides.domain import Rides
 
@@ -34,9 +35,16 @@ def main() -> None:
         if args.command == "generate-templates":
             generate_templates(db)
         elif args.command == "setup-telegram":
-            telegram("setWebhook", {"url": settings().public_url + "/telegram/webhook", "secret_token": settings().telegram_webhook_secret, "allowed_updates": ["message", "edited_message", "callback_query", "my_chat_member", "chat_member"]})
-            message = telegram("sendMessage", {"chat_id": settings().telegram_channel_id, "text": render(db, "welcome"), "reply_markup": welcome_buttons()})
-            telegram("pinChatMessage", {"chat_id": settings().telegram_channel_id, "message_id": message["message_id"]})
+            config = settings()
+            webhook_origin = urlparse(config.public_url)
+            if webhook_origin.scheme != "https" or webhook_origin.hostname in {None, "localhost", "127.0.0.1", "::1"}:
+                parser.error("PUBLIC_URL must be a publicly reachable HTTPS origin before setup-telegram can run")
+            try:
+                telegram("setWebhook", {"url": config.public_url.rstrip("/") + "/telegram/webhook", "secret_token": config.telegram_webhook_secret, "allowed_updates": ["message", "edited_message", "callback_query", "my_chat_member", "chat_member"]})
+                message = telegram("sendMessage", {"chat_id": config.telegram_channel_id, "text": render(db, "welcome"), "reply_markup": welcome_buttons()})
+                telegram("pinChatMessage", {"chat_id": config.telegram_channel_id, "message_id": message["message_id"]})
+            except ProviderError as exc:
+                parser.error(str(exc))
         elif args.command == "dead-jobs":
             for job in db.scalars(select(Job).where(Job.status == "dead")):
                 print(json.dumps({"id": job.id, "kind": job.kind, "error": job.error}))

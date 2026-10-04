@@ -12,12 +12,13 @@ from servicehub.security.tokens import sign_payload, verify_payload
 class ProviderError(RuntimeError):
     """Expose retry metadata without leaking request URLs or credentials."""
 
-    def __init__(self, service: str, retry_after: int = 30, permanent: bool = False):
+    def __init__(self, service: str, retry_after: int = 30, permanent: bool = False, detail: str = ""):
         """Capture a safe provider identifier and delivery policy."""
 
-        super().__init__(service)
+        super().__init__(f"{service}: {detail}" if detail else service)
         self.retry_after = retry_after
         self.permanent = permanent
+        self.detail = detail
 
 def telegram(method: str, payload: dict) -> dict:
     """Call Telegram without logging secret-bearing endpoint URLs."""
@@ -34,7 +35,12 @@ def telegram(method: str, payload: dict) -> dict:
     if not data.get("ok"):
         if "message is not modified" in data.get("description", ""):
             return {}
-        raise ProviderError("telegram_rejected", data.get("parameters", {}).get("retry_after", 30), data.get("error_code") in {400, 401, 403})
+        raise ProviderError(
+            "telegram_rejected",
+            data.get("parameters", {}).get("retry_after", 30),
+            data.get("error_code") in {400, 401, 403},
+            data.get("description", "Telegram rejected the request"),
+        )
     return data["result"]
 
 def require_member(user_id: int) -> None:
