@@ -3,7 +3,7 @@
 import time
 import uuid
 
-from sqlalchemy import JSON, BigInteger, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Double, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from servicehub.database.session import Base
@@ -32,16 +32,16 @@ class Ride(Base):
     revision: Mapped[int] = mapped_column(Integer, default=1)
     generation: Mapped[int] = mapped_column(Integer, default=1)
     details: Mapped[dict] = mapped_column(JSON)
-    scheduled_at: Mapped[float | None] = mapped_column(Float)
+    scheduled_at: Mapped[float | None] = mapped_column(Double)
     timezone: Mapped[str] = mapped_column(String(64), default="America/Toronto")
-    bid_until: Mapped[float | None] = mapped_column(Float, index=True)
-    choose_until: Mapped[float | None] = mapped_column(Float)
+    bid_until: Mapped[float | None] = mapped_column(Double, index=True)
+    choose_until: Mapped[float | None] = mapped_column(Double)
     price_cents: Mapped[int | None] = mapped_column(Integer)
     pickup_attempt: Mapped[str | None] = mapped_column(String(32))
-    pickup_until: Mapped[float | None] = mapped_column(Float)
-    started_at: Mapped[float | None] = mapped_column(Float)
-    ended_at: Mapped[float | None] = mapped_column(Float, index=True)
-    created_at: Mapped[float] = mapped_column(Float, default=time.time)
+    pickup_until: Mapped[float | None] = mapped_column(Double)
+    started_at: Mapped[float | None] = mapped_column(Double)
+    ended_at: Mapped[float | None] = mapped_column(Double, index=True)
+    created_at: Mapped[float] = mapped_column(Double, default=time.time)
     channel_message: Mapped[int | None] = mapped_column(BigInteger)
 
 class Offer(Base):
@@ -63,9 +63,9 @@ class Command(Base):
     actor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     action: Mapped[str] = mapped_column(String(32))
     args: Mapped[dict] = mapped_column(JSON)
-    expires_at: Mapped[float] = mapped_column(Float)
+    expires_at: Mapped[float] = mapped_column(Double)
     result: Mapped[dict | None] = mapped_column(JSON)
-    created_at: Mapped[float] = mapped_column(Float, default=time.time)
+    created_at: Mapped[float] = mapped_column(Double, default=time.time)
 
 class Job(Base):
     """Serve as durable inbox, outbox, and scheduled work with expiring leases."""
@@ -74,13 +74,13 @@ class Job(Base):
     dedupe: Mapped[str] = mapped_column(String(190), unique=True)
     kind: Mapped[str] = mapped_column(String(24))
     payload: Mapped[dict] = mapped_column(JSON)
-    due_at: Mapped[float] = mapped_column(Float, index=True)
-    lease_until: Mapped[float] = mapped_column(Float, default=0)
+    due_at: Mapped[float] = mapped_column(Double, index=True)
+    lease_until: Mapped[float] = mapped_column(Double, default=0)
     lease_token: Mapped[str | None] = mapped_column(String(32))
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
     error: Mapped[str | None] = mapped_column(String(128))
-    created_at: Mapped[float] = mapped_column(Float, default=time.time)
+    created_at: Mapped[float] = mapped_column(Double, default=time.time)
 
 class Event(Base):
     """Record privacy-minimal state transitions and operator interventions."""
@@ -90,7 +90,7 @@ class Event(Base):
     actor_id: Mapped[int] = mapped_column(BigInteger)
     action: Mapped[str] = mapped_column(String(40))
     note: Mapped[str] = mapped_column(String(255), default="")
-    created_at: Mapped[float] = mapped_column(Float, default=time.time, index=True)
+    created_at: Mapped[float] = mapped_column(Double, default=time.time, index=True)
 
 class Location(Base):
     """Retain consented first-party GPS fixes independently of address provider data."""
@@ -98,10 +98,10 @@ class Location(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=uid)
     ride_id: Mapped[str] = mapped_column(ForeignKey("rides.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    latitude: Mapped[float] = mapped_column(Float)
-    longitude: Mapped[float] = mapped_column(Float)
-    accuracy: Mapped[float | None] = mapped_column(Float)
-    sampled_at: Mapped[float] = mapped_column(Float, index=True)
+    latitude: Mapped[float] = mapped_column(Double)
+    longitude: Mapped[float] = mapped_column(Double)
+    accuracy: Mapped[float | None] = mapped_column(Double)
+    sampled_at: Mapped[float] = mapped_column(Double, index=True)
     source: Mapped[str] = mapped_column(String(16))
 
 class TrainingSample(Base):
@@ -112,9 +112,9 @@ class TrainingSample(Base):
     agreed_price_cents: Mapped[int] = mapped_column(Integer)
     currency: Mapped[str] = mapped_column(String(3), default="CAD")
     pickup_city: Mapped[str] = mapped_column(String(100))
-    completed_at: Mapped[float] = mapped_column(Float, index=True)
+    completed_at: Mapped[float] = mapped_column(Double, index=True)
     distance_source: Mapped[str] = mapped_column(String(32), default="driver_gps")
-    coverage: Mapped[float] = mapped_column(Float)
+    coverage: Mapped[float] = mapped_column(Double)
     quality_flags: Mapped[list] = mapped_column(JSON)
     eligible: Mapped[bool]
 
