@@ -9,7 +9,7 @@ from servicehub.core.config import settings
 from servicehub.database.session import Session
 from servicehub.database.tables import Job, Offer, Ride, User, uid
 from servicehub.integrations.providers import ProviderError, telegram
-from servicehub.integrations.telegram.messaging import event_messages, render
+from servicehub.integrations.telegram.messaging import channel_ride_text, event_messages, render
 from servicehub.rides.domain import Rides, enqueue
 from servicehub.rides.views import ride_view
 
@@ -122,13 +122,17 @@ def update_channel(ride_id: str) -> None:
         if not ride or ride.state == "Draft":
             return
         view = ride_view(Rides(db), 0, ride)
+        text = channel_ride_text(ride, view)
         if ride.state == "Open":
-            text = render(db, "request", {"pickup": view["pickup"], "destination": view["destination"], "schedule": view["scheduled_label"], "reference": ride.id[:8]})
             buttons = [[{"text": "Make an Offer", "url": f"https://t.me/{settings().telegram_bot_username}?start=offer_{ride.id}"}]]
         else:
-            text = render(db, "status", {"reference": ride.id[:8], "state": ride.state, "details": f"{view['pickup']} → {view['destination']}"})
             buttons = []
-        body = {"chat_id": settings().telegram_channel_id, "text": text, "reply_markup": {"inline_keyboard": buttons}}
+        body = {
+            "chat_id": settings().telegram_channel_id,
+            "text": text,
+            "parse_mode": "MarkdownV2",
+            "reply_markup": {"inline_keyboard": buttons},
+        }
         if ride.channel_message:
             telegram("editMessageText", {**body, "message_id": ride.channel_message})
         else:

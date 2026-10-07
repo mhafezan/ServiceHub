@@ -33,6 +33,33 @@ TEMPLATES = {
     "unavailable": "No current shared location is available. Ask the other participant to share their location.",
 }
 
+MARKDOWN_V2_SPECIAL = re.compile(r"([_*\[\]()~`>#+\-=|{}.!\\])")
+
+
+def telegram_markdown(value: object) -> str:
+    """Escape dynamic text before placing it inside Telegram MarkdownV2 markup."""
+
+    return MARKDOWN_V2_SPECIAL.sub(r"\\\1", str(value))
+
+
+def channel_ride_text(ride: Ride, view: dict) -> str:
+    """Format public ride facts as one bold-valued field per channel-message line."""
+
+    fields = [
+        ("Ride ID", ride.id[:8].upper()),
+        ("Status", ride.state.replace("_", " ")),
+        ("Source", view["pickup"]),
+        ("Destination", view["destination"]),
+    ]
+    if ride.state == "Open":
+        fields.extend(
+            [
+                ("Pickup", view["scheduled_label"]),
+                ("Offer Window", "5 minutes"),
+            ]
+        )
+    return "\n".join(f"{label}: *{telegram_markdown(value)}*" for label, value in fields)
+
 def placeholders(text: str) -> set[str]:
     """Extract simple placeholders and reject format expressions or attribute access."""
 
