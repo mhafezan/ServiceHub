@@ -35,12 +35,10 @@ TEMPLATES = {
 
 MARKDOWN_V2_SPECIAL = re.compile(r"([_*\[\]()~`>#+\-=|{}.!\\])")
 
-
 def telegram_markdown(value: object) -> str:
     """Escape dynamic text before placing it inside Telegram MarkdownV2 markup."""
 
     return MARKDOWN_V2_SPECIAL.sub(r"\\\1", str(value))
-
 
 def channel_ride_text(ride: Ride, view: dict) -> str:
     """Format public ride facts as one bold-valued field per channel-message line."""
