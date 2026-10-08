@@ -138,6 +138,8 @@ class Rides:
                 participants.add(offer.driver_id)
         users = self.users(*participants)
         command = self.db.scalar(select(Command).where(Command.id == command_id).with_for_update().execution_options(populate_existing=True))
+        if not command:
+            raise RuleError("Confirmation not found")
         if command.result is not None:
             return command.result
         if command.expires_at < self.now:

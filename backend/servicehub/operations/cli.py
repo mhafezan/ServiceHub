@@ -49,10 +49,10 @@ def main() -> None:
             for job in db.scalars(select(Job).where(Job.status == "dead")):
                 print(json.dumps({"id": job.id, "kind": job.kind, "error": job.error}))
         elif args.command == "retry":
-            job = db.get(Job, args.id)
-            if not job or job.status != "dead":
+            retry_job = db.get(Job, args.id)
+            if not retry_job or retry_job.status != "dead":
                 parser.error("Provide a dead job ID")
-            job.status, job.attempts, job.due_at = "pending", 0, time.time()
+            retry_job.status, retry_job.attempts, retry_job.due_at = "pending", 0, time.time()
         elif args.command == "close-ride":
             if args.actor not in settings().operator_ids or len(args.reason.strip()) < 10:
                 parser.error("An allowlisted operator and descriptive reason are required")
@@ -60,6 +60,8 @@ def main() -> None:
             ride = db.get(Ride, args.id)
             if not ride or ride.state != "Trip_Started":
                 parser.error("Only a stuck started trip can be administratively closed")
+            if not ride.driver_id:
+                parser.error("The started trip has no assigned driver")
             users = service.users(ride.rider_id, ride.driver_id)
             ride = service.ride(ride.id)
             ride.state, ride.ended_at = "Administrative_Closure", time.time()

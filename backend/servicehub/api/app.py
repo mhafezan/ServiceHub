@@ -205,6 +205,8 @@ def view_location(ride_id: str, user_id: Actor):
         if not ride or user_id not in {ride.rider_id, ride.driver_id} or ride.state not in TRACKABLE:
             raise RuleError("Location access is unavailable")
         target = ride.driver_id if user_id == ride.rider_id else ride.rider_id
+        if target is None:
+            raise RuleError("Location access is unavailable")
         fix = service.latest_location(ride, target)
         if not fix:
             return None

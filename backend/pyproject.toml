@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<9", "pytest-cov>=6,<7", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyMySQL"]
+dev = ["pytest>=8,<9", "pytest-cov>=6,<7", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyMySQL", "httpx2>=2,<3"]
 
 [project.scripts]
 servicehub = "servicehub.operations.cli:main"
@@ -28,6 +28,14 @@ include = ["servicehub*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["mysql: requires a real MySQL database"]
+
+[tool.coverage.run]
+branch = true
+source = ["servicehub"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
 
 [tool.ruff]
 line-length = 110

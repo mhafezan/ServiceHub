@@ -83,6 +83,8 @@ def execute(kind: str, payload: dict, job_id: str) -> None:
                 return
             ride = db.get(Ride, offer.ride_id)
             driver = db.get(User, offer.driver_id)
+            if not ride or not driver:
+                return
             if offer.status == "pending" and ride.state in {"Open", "Selecting"}:
                 from servicehub.integrations.telegram.messaging import form_button
                 enqueue(db, "send", {"chat_id": ride.rider_id,
@@ -95,6 +97,8 @@ def execute(kind: str, payload: dict, job_id: str) -> None:
         if kind == "expiry":
             service.expire(ride.id, payload["generation"])
         elif kind == "pickup_expiry":
+            if not ride.driver_id:
+                return
             service.users(ride.rider_id, ride.driver_id)
             ride = service.ride(ride.id)
             if ride.state == "Pickup_Confirmation_Pending" and ride.pickup_attempt == payload["attempt"] and time.time() >= (ride.pickup_until or 0):
@@ -154,7 +158,7 @@ def dispatch() -> None:
                     "url": f"{config.worker_url}/internal/jobs/{job.id}",
                     "oidc_token": {"service_account_email": config.worker_service_account, "audience": config.internal_audience},
                     "headers": {"Content-Type": "application/json"}, "body": b"{}"}}
-            queue.create_task(parent=parent, task=task)
+            queue.create_task(parent=parent, task=task)  # type: ignore[arg-type]
 
 def run_local() -> None:
     """Poll the same durable queue locally without requiring Redis or GCP."""

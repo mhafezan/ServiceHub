@@ -30,11 +30,15 @@ def ride_view(service: Rides, actor: int, ride: Ride) -> dict:
         result["instructions"] = details.get("instructions", "")
         result["unit"] = details.get("unit", "")
     quotes = service.db.scalars(select(Offer).where(Offer.ride_id == ride.id, Offer.generation == ride.generation)).all()
-    result["offers"] = [
-        {"id": quote.id, "revision": quote.revision, "price_cents": quote.price_cents, "status": quote.status,
-         "driver_name": service.db.get(User, quote.driver_id).name}
-        for quote in quotes if actor == ride.rider_id or actor == quote.driver_id
-    ]
+    offers = []
+    for quote in quotes:
+        if actor != ride.rider_id and actor != quote.driver_id:
+            continue
+        driver = service.db.get(User, quote.driver_id)
+        if driver:
+            offers.append({"id": quote.id, "revision": quote.revision, "price_cents": quote.price_cents,
+                           "status": quote.status, "driver_name": driver.name})
+    result["offers"] = offers
     return result
 
 def visible_ride(service: Rides, actor: int, ride_id: str) -> dict:
@@ -68,8 +72,10 @@ def command_summary(service: Rides, actor: int, action: str, args: dict) -> str:
         if args.get("offer_revision") != quote.revision:
             raise RuleError("Offer changed; refresh before accepting")
         args["price_cents"] = quote.price_cents
-        name = service.db.get(User, quote.driver_id).name
-        text += f" · {name} · CAD {quote.price_cents / 100:.2f}"
+        driver = service.db.get(User, quote.driver_id)
+        if not driver:
+            raise RuleError("Offer is no longer available")
+        text += f" · {driver.name} · CAD {quote.price_cents / 100:.2f}"
     elif action == "offer":
         price = args.get("price_cents")
         if type(price) is not int or not 1 <= price <= 10_000_000:

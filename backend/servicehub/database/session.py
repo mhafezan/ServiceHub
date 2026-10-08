@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
 def make_engine(url: str):
     """Construct a portable test engine or a bounded MySQL production pool."""
     
-    options = {"pool_pre_ping": True}
+    options: dict[str, object] = {"pool_pre_ping": True}
     if not url.startswith("sqlite"):
         options.update(pool_size=5, max_overflow=2, pool_recycle=1200, isolation_level="READ COMMITTED")
     return create_engine(url, **options)

@@ -10,6 +10,7 @@ from servicehub.rides.domain import TRACKABLE, Rides
 
 TEMPLATES = {
     "welcome": "Welcome to ServiceHub. Need a ride in Ontario, or have a question?",
+    "smart_support": "Smart Support is coming soon. In the meantime, use Need a Ride to request or manage a ride.",
     "request": "Ride requested: {pickup} → {destination}. Pickup: {schedule}. Bidding closes in five minutes. Reference: {reference}.",
     "status": "Ride {reference}: {state}. {details}",
     "offer": "{driver} offered CAD {price} for ride {reference}. Review the current offer before accepting.",
@@ -109,7 +110,7 @@ def welcome_buttons() -> dict:
     """Keep the requested two-row pinned entry layout stable."""
 
     root = f"https://t.me/{settings().telegram_bot_username}?start="
-    return {"inline_keyboard": [[{"text": "Need a Ride", "url": root + "ride"}], [{"text": "Ask Lili", "url": root + "lili"}]]}
+    return {"inline_keyboard": [[{"text": "Need a Ride", "url": root + "ride"}], [{"text": "Smart Support", "url": root + "support"}]]}
 
 def ride_buttons(service: Rides, actor: int, ride: Ride) -> dict:
     """Create owned, version-bound confirmation proposals and tracking controls."""
@@ -150,8 +151,10 @@ def event_messages(service: Rides, ride: Ride, action: str) -> list[dict]:
     
     db = service.db
     rider = db.get(User, ride.rider_id)
+    if not rider:
+        return []
     recipients: list[tuple[int, str, dict]] = []
-    if action == "matched" and ride.driver_id:
+    if action == "matched" and ride.driver_id and ride.price_cents is not None:
         recipients += [(ride.driver_id, "matched_driver", {"rider": rider.name, "price": f"{ride.price_cents / 100:.2f}",
             "pickup": ride.details["pickup"]["exact"] + " " + ride.details.get("unit", ""),
             "destination": ride.details["destination"]["exact"], "instructions": ride.details.get("instructions", "")}),

@@ -84,7 +84,7 @@ def answer(service: Rides, actor: int, text: str, explicit: str | None = None) -
         response = client().responses.create(model=settings().openai_model, store=False,
                                             instructions=instructions,
                                             input=conversation,
-                                            tools=tools, max_output_tokens=1200)
+                                            tools=tools, max_output_tokens=1200)  # type: ignore[arg-type]
         
         calls = [item for item in response.output if item.type == "function_call"]
 

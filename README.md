@@ -6,11 +6,11 @@ Agent-assisted community services delivered through Telegram.
 
 ServiceHub is an extensible platform for coordinating local services from a Telegram channel and private bot conversations. Its first service is an Ontario ride marketplace: riders publish immediate or scheduled requests, drivers submit private CAD offers, riders choose an offer, and both participants manage pickup, live location, trip progress, and completion through a Telegram Mini App.
 
-> **Development status:** ServiceHub is under active development. The core application and Mini App are present, but automated tests, container and cloud infrastructure, CI/CD workflows, and production deployment validation are not yet included in this repository.
+> **Development status:** ServiceHub is under active development. The core application, Mini App, and offline automated test suites are present, but container and cloud infrastructure, CI/CD workflows, and production deployment validation are not yet included in this repository.
 
 ## What ServiceHub provides
 
-- A public Telegram channel entry point with **Need a Ride** and **Ask Lili** actions.
+- A public Telegram channel entry point with **Need a Ride** and **Smart Support** actions.
 - Private rider and driver workflows backed by explicit confirmation before consequential actions.
 - Immediate and scheduled Ontario rides using Google Places for address selection.
 - Five-minute driver bidding followed by up to five minutes for the rider to select an offer.
@@ -18,7 +18,8 @@ ServiceHub is an extensible platform for coordinating local services from a Tele
 - Address privacy: channel posts contain only street and municipality; exact addresses are available only to matched participants.
 - Consent-based Telegram and Mini App location sharing.
 - Proximity-gated trip start and completion, including rider confirmation of pickup.
-- A supervisor that routes requests to the ride assistant or Lili, the read-only service-information assistant.
+- A supervisor and agent foundation designed to support additional services as ServiceHub grows.
+- A **Smart Support** entry that currently displays a coming-soon message while the general support agent is developed.
 - A durable database-backed job queue for Telegram updates, notifications, deadlines, reminders, retries, and retention work.
 - De-identified completed-ride samples containing measured GPS distance, agreed CAD price, and rider-supplied pickup municipality for future pricing research.
 
@@ -56,7 +57,7 @@ flowchart TB
     UI[React Telegram Mini App] --> API
     API --> SUP[Supervisor]
     SUP --> RIDE[Ride assistant]
-    SUP --> LILI[Lili information assistant]
+    SUP --> SUPPORT[Smart Support placeholder]
     RIDE --> DOMAIN[Transactional ride domain]
     API --> DOMAIN
     DOMAIN --> DB[(MySQL / InnoDB)]
@@ -65,7 +66,6 @@ flowchart TB
     WORKER --> TG
     API --> PLACES[Google Places]
     RIDE --> OPENAI[OpenAI Responses API]
-    LILI --> OPENAI
 ```
 
 The language model interprets requests and proposes actions. It does not control identity, authorization, prices, addresses, ride state, or user consent. Those decisions remain in authenticated application code and database transactions.
@@ -90,7 +90,7 @@ The language model interprets requests and proposes actions. It does not control
 ├── backend/
 │   ├── migrations/            # Alembic migration environment and schema versions
 │   ├── servicehub/
-│   │   ├── agents/            # Supervisor, ride assistant, and Lili orchestration
+│   │   ├── agents/            # Supervisor and service-agent orchestration
 │   │   ├── api/               # Public, Telegram webhook, and internal HTTP routes
 │   │   ├── core/              # Environment configuration and repository paths
 │   │   ├── database/          # SQLAlchemy sessions and table definitions
@@ -287,26 +287,41 @@ The public [privacy notice](frontend/public/privacy.html) and [service terms](fr
 
 ## Verification
 
-The project declares the following checks, although the corresponding test suite and CI workflows still need to be added:
+Run the backend quality checks and default offline suite from the repository root. These tests use isolated SQLite databases, deterministic fixtures, and mocked provider boundaries; they do not require real credentials, MySQL, Telegram, Cloudflare, OpenAI, Google Places, or GCP.
 
-```bash
-ruff check .
-mypy servicehub
-pytest
+```powershell
+# Backend quality and default offline tests
+.\.venv\Scripts\python.exe -m ruff check backend
+.\.venv\Scripts\python.exe -m mypy backend\servicehub
+.\.venv\Scripts\python.exe -m pytest -c backend\pyproject.toml backend\tests -m "not mysql" --cov=servicehub --cov-report=term-missing
+```
 
+The optional concurrency suite requires a dedicated disposable MySQL database. Its database name must end in `_test`; the fixture refuses other database names and skips clearly when the variable is absent.
+
+```powershell
+# Optional dedicated MySQL tests
+$env:SERVICEHUB_TEST_MYSQL_URL="mysql+pymysql://user:password@127.0.0.1:3306/servicehub_test"
+.\.venv\Scripts\python.exe -m pytest -c backend\pyproject.toml backend\tests -m mysql
+```
+
+Run the Mini App build and deterministic mobile Chromium journeys separately:
+
+```powershell
+# Frontend build and browser tests
 cd frontend
+npm ci
+npx playwright install chromium
 npm run build
 npm test
 ```
 
-Production readiness should include MySQL concurrency tests, Telegram end-to-end testing with a separate bot/channel, mobile Mini App testing, provider-outage tests, migration checks, dependency and secret scanning, and staging deployment verification.
+The browser suite starts Vite automatically and intercepts `/api/**` with stateful responses matching the current backend contracts. Full Telegram/Cloudflare end-to-end testing still requires a separate staging bot and channel. Production readiness also requires migration checks, dependency and secret scanning, and staging deployment verification.
 
 ## Roadmap
 
-- Add automated domain, API, provider, worker, and browser tests.
 - Add Docker-based local development and reproducible MySQL integration testing.
 - Add GitHub Actions CI/CD and infrastructure-as-code for the intended GCP deployment.
-- Add the ride quick guide consumed by Lili and the public guide endpoint.
+- Add the ride quick guide and develop the Smart Support service-information agent.
 - Continue splitting provider adapters as additional external services are introduced.
 - Add a rental service through the supervisor's service registry.
 - Train and evaluate city-aware price guidance only after enough eligible first-party samples exist.

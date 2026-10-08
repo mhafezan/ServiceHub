@@ -50,7 +50,7 @@ def handle_update(update: dict) -> None:
         elif "location" in message:
             with Session.begin() as db:
                 user = db.get(User, actor)
-                if not user.active_ride:
+                if not user or not user.active_ride:
                     return
                 point = message["location"]
                 if not point.get("live_period"):
@@ -92,7 +92,10 @@ def handle_callback(actor: int, data: str) -> None:
             ride = db.get(Ride, data.split(":", 1)[1])
             if not ride or actor not in {ride.rider_id, ride.driver_id} or ride.state not in TRACKABLE:
                 raise RuleError("Location access is unavailable")
-            fix = service.latest_location(ride, ride.driver_id if actor == ride.rider_id else ride.rider_id)
+            target = ride.driver_id if actor == ride.rider_id else ride.rider_id
+            if target is None:
+                raise RuleError("Location access is unavailable")
+            fix = service.latest_location(ride, target)
             if fix:
                 age = round(time.time() - fix.sampled_at)
                 send_later(db, actor, render(db, "location", {"seconds": age, "accuracy": fix.accuracy if fix.accuracy is not None else "unknown", "freshness": "Stale location" if age > 60 else "Recent location"}), {"inline_keyboard": [[form_button("Refresh Location", ride.id)]]})
@@ -109,6 +112,8 @@ def handle_text(actor: int, text: str, update_id: int) -> None:
     with Session.begin() as db:
         service = Rides(db)
         user = db.get(User, actor)
+        if not user:
+            raise RuleError("Start the bot before using this service")
         if text.startswith("/start"):
             parameter = text.partition(" ")[2]
             if parameter.startswith("offer_"):
@@ -119,11 +124,13 @@ def handle_text(actor: int, text: str, update_id: int) -> None:
                 send_later(db, actor, render(db, "offer_prompt"), {"inline_keyboard": [[form_button("Review Ride", ride_id)]]})
                 return
             user.context = {}
-            user.mode = "lili" if parameter == "lili" else "ride"
-            if parameter != "lili":
-                send_later(db, actor, render(db, "welcome"), {"inline_keyboard": [[form_button("Need a Ride")]]})
+            if parameter in {"support", "lili"}:
+                user.mode = "support"
+                send_later(db, actor, render(db, "smart_support"), {"inline_keyboard": [[form_button("Need a Ride")]]})
                 return
-            text, explicit = "How can I use ServiceHub?", "lili"
+            user.mode = "ride"
+            send_later(db, actor, render(db, "welcome"), {"inline_keyboard": [[form_button("Need a Ride")]]})
+            return
         if text in {"/myride", "/help"}:
             ride = db.get(Ride, user.active_ride) if user.active_ride else None
             if ride:
