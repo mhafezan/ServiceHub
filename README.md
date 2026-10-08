@@ -291,10 +291,12 @@ Run the backend quality checks and default offline suite from the repository roo
 
 ```powershell
 # Backend quality and default offline tests
-.\.venv\Scripts\python.exe -m ruff check backend
-.\.venv\Scripts\python.exe -m mypy backend\servicehub
+.\.venv\Scripts\python.exe -m ruff check --config backend\pyproject.toml backend
+.\.venv\Scripts\python.exe -m mypy --config-file backend\pyproject.toml backend\servicehub
 .\.venv\Scripts\python.exe -m pytest -c backend\pyproject.toml backend\tests -m "not mysql" --cov=servicehub --cov-report=term-missing
 ```
+
+Ruff and mypy keep their generated analysis data under `.cache\verification\ruff` and `.cache\verification\mypy`. The shared `.cache` directory is ignored by Git and can be deleted safely at any time.
 
 The optional concurrency suite requires a dedicated disposable MySQL database. Its database name must end in `_test`; the fixture refuses other database names and skips clearly when the variable is absent.
 

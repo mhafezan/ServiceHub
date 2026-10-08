@@ -38,13 +38,18 @@ show_missing = true
 skip_covered = false
 
 [tool.ruff]
+cache-dir = "../.cache/verification/ruff"
 line-length = 110
 target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["servicehub"]
+
 [tool.mypy]
+cache_dir = "$MYPY_CONFIG_FILE_DIR/../.cache/verification/mypy"
 python_version = "3.12"
 ignore_missing_imports = true
 check_untyped_defs = true
